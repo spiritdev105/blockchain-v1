@@ -1,0 +1,11 @@
+[workspace.package]
+version = "0.0.0"                               # managed by cargo-workspaces, see below
+edition = "2021"
+rust-version = "1.81.0"
+repository = "https://github.com/volodymyrd/blockchain-v1"
+
+[workspace]
+resolver = "2"
+members = ["chain-core", "chain-model"]
+
+[workspace.dependencies]
