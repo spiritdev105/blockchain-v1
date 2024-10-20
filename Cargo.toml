@@ -9,3 +9,9 @@ resolver = "2"
 members = ["chain-core", "chain-model"]
 
 [workspace.dependencies]
+bs58 = "0.4"
+derive_more = "0.99.9"
+sha2 = "0.10"
+# internal
+chain-core = { path = "chain-core" }
+chain-model = { path = "chain-model" }

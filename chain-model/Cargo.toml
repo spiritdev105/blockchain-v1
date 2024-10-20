@@ -1,6 +1,9 @@
 [package]
 name = "chain-model"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
+bs58.workspace = true
+derive_more.workspace = true
+sha2.workspace = true
