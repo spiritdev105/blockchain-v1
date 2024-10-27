@@ -151,6 +151,23 @@ impl Doomslug {
                 self.timer.last_endorsement_sent = now;
                 self.endorsement_pending = false;
             }
+
+            if now >= self.timer.started + skip_delay {
+                debug_assert!(!self.endorsement_pending);
+
+                self.largest_target_height =
+                    std::cmp::max(self.timer.height + 1, self.largest_target_height);
+
+                if let Some(approval) = self.create_approval(self.timer.height + 1) {
+                    approvals.push(approval);
+                }
+
+                // Restart the timer
+                self.timer.started += skip_delay;
+                self.timer.height += 1;
+            } else {
+                break;
+            }
         }
         approvals
     }
@@ -183,5 +200,38 @@ mod tests {
         let approval = ds.process_timer().into_iter().nth(0).unwrap();
         assert_eq!(approval.inner, ApprovalInner::Endorsement(hash(&[123])));
         assert_eq!(approval.target_height, 2);
+
+        // Same tip => no approval
+        assert_eq!(ds.process_timer(), vec![]);
+
+        // The block was `ds_final` and therefore started the timer.
+        // Try checking before one second expires
+        clock.advance(Duration::from_millis(599));
+        assert_eq!(ds.process_timer(), vec![]);
+
+        // But one second should trigger the skip
+        clock.advance(Duration::from_millis(1));
+        match ds.process_timer() {
+            approvals if approvals.is_empty() => assert!(false),
+            approvals => {
+                assert_eq!(approvals[0].inner, ApprovalInner::Skip(1));
+                assert_eq!(approvals[0].target_height, 3);
+            }
+        }
+
+        // Not processing a block at height 2 should not produce an approval
+        ds.set_tip(hash(&[234]), 2, 0);
+        clock.advance(Duration::from_millis(400));
+        assert_eq!(ds.process_timer(), vec![]);
+
+        // Go forward more so we have 1 second
+        clock.advance(Duration::from_millis(600));
+
+        // But at height 3 should (also neither block has finality set, keep last final at 0 for now)
+        ds.set_tip(hash(&[31]), 3, 0);
+        clock.advance(Duration::from_millis(400));
+        let approval = ds.process_timer().into_iter().nth(0).unwrap();
+        assert_eq!(approval.inner, ApprovalInner::Endorsement(hash(&[31])));
+        assert_eq!(approval.target_height, 4);
     }
 }
