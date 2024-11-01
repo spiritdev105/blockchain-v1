@@ -233,5 +233,53 @@ mod tests {
         let approval = ds.process_timer().into_iter().nth(0).unwrap();
         assert_eq!(approval.inner, ApprovalInner::Endorsement(hash(&[31])));
         assert_eq!(approval.target_height, 4);
+
+        // Go forward more so we have another second
+        clock.advance(Duration::from_millis(600));
+
+        clock.advance(Duration::from_millis(199));
+        assert_eq!(ds.process_timer(), vec![]);
+
+        clock.advance(Duration::from_millis(1));
+        match ds.process_timer() {
+            approvals if approvals.is_empty() => assert!(false),
+            approvals if approvals.len() == 1 => {
+                assert_eq!(approvals[0].inner, ApprovalInner::Skip(3));
+                assert_eq!(approvals[0].target_height, 5);
+            }
+            _ => assert!(false),
+        }
+
+        // Go forward more so we have another second
+        clock.advance(Duration::from_millis(800));
+
+        // Now skip 5 (the extra delay is 200+300 = 500)
+        clock.advance(Duration::from_millis(499));
+        assert_eq!(ds.process_timer(), vec![]);
+
+        clock.advance(Duration::from_millis(1));
+        match ds.process_timer() {
+            approvals if approvals.is_empty() => assert!(false),
+            approvals => {
+                assert_eq!(approvals[0].inner, ApprovalInner::Skip(3));
+                assert_eq!(approvals[0].target_height, 6);
+            }
+        }
+
+        // Go forward more so we have another second
+        clock.advance(Duration::from_millis(500));
+
+        // Skip 6 (the extra delay is 0+200+300+400 = 900)
+        clock.advance(Duration::from_millis(899));
+        assert_eq!(ds.process_timer(), vec![]);
+
+        clock.advance(Duration::from_millis(1));
+        match ds.process_timer() {
+            approvals if approvals.is_empty() => assert!(false),
+            approvals => {
+                assert_eq!(approvals[0].inner, ApprovalInner::Skip(3));
+                assert_eq!(approvals[0].target_height, 7);
+            }
+        }
     }
 }
