@@ -6,12 +6,16 @@ repository = "https://github.com/volodymyrd/blockchain-v1"
 
 [workspace]
 resolver = "2"
-members = ["chain-core", "chain-model"]
+members = ["chain-core", "chain-model", "cli", "types"]
 
 [workspace.dependencies]
 bs58 = "0.4"
 derive_more = "0.99.9"
 sha2 = "0.10"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
 # internal
 chain-core = { path = "chain-core" }
 chain-model = { path = "chain-model" }
+types = { path = "types" }
